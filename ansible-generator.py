@@ -4,10 +4,15 @@ import pwd
 import glob
 import gzip
 from pathlib import Path
-from shutil import copyfile
+from shutil import copyfile, which
 
 def get_username():
     return pwd.getpwuid( os.getuid() )[ 0 ]
+
+def is_tool(name):
+    """Check whether `name` is on PATH and marked as executable."""
+
+    return which(name) is not None
 
 class Playbook:
     name = "Deploy locally"
@@ -153,7 +158,7 @@ def main():
     packages_to_install = installed_apt_packages()
     packages_to_remove = removed_apt_packages()
     packages_to_install = list(set(packages_to_install) - set(packages_to_remove))
-    snap_packages_to_install = installed_snap_packages()
+
     install_packages = Task(
         name="Install apt packages",
         properties={
@@ -172,17 +177,21 @@ def main():
             },
         },
     )
-    install_snap_packages = Task(
-        name="Install snap packages",
-        properties={
-            "community.general.snap": {
-                "name": snap_packages_to_install,
-            },
-        },
-    )
+
     pb.tasks.append(install_packages)
     pb.tasks.append(remove_packages)
-    pb.tasks.append(install_snap_packages)
+
+    if is_tool('snap'):
+        snap_packages_to_install = installed_snap_packages()
+        install_snap_packages = Task(
+            name="Install snap packages",
+            properties={
+                "community.general.snap": {
+                    "name": snap_packages_to_install,
+                },
+            },
+        )
+        pb.tasks.append(install_snap_packages)
 
     copy_env_files()
 
