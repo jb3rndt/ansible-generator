@@ -152,9 +152,7 @@ def main():
     pb = Playbook()
     packages_to_install = installed_apt_packages()
     packages_to_remove = removed_apt_packages()
-    intersection = set.intersection(set(packages_to_install), set(packages_to_remove))
-    packages_to_install = list(set(packages_to_install) - intersection)
-    packages_to_remove = list(set(packages_to_remove) - intersection)
+    packages_to_install = list(set(packages_to_install) - set(packages_to_remove))
     snap_packages_to_install = installed_snap_packages()
     install_packages = Task(
         name="Install apt packages",
