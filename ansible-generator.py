@@ -5,8 +5,8 @@ from pathlib import Path
 
 
 class Playbook:
-    name = "Deploy locally"
-    hosts = "localhost"
+    name = "Deploy in VM"
+    hosts = "all"
     become = True
     tasks = []
 
@@ -90,13 +90,40 @@ def removed_apt_packages():
     # zgrep -hPo '^Commandline: (apt-get|apt) install (?!.*--reinstall)\K.*' /var/log/apt/history.log{.*.gz,}
 
 
+def installed_ppas():
+    ppas = []
+    files = glob.glob("/etc/apt/**/*.list", recursive=True)
+    regex = re.compile("^deb http:\/\/ppa\.launchpad\.net\/([a-z0-9\-]+)\/([a-z0-9\-]+)")
+    for filename in files:
+        with open(filename,"r") as file:
+            for line in file:
+                match = regex.search(line)
+                if match is not None:
+                    ppas.append("ppa:" + match.group(1) + "/" + match.group(2))
+    return ppas
+
+
 def main():
     pb = Playbook()
+    
+    ## ppas
+    ppas_to_install = installed_ppas()
+    for ppa in ppas_to_install:
+        task = Task(
+            name=f"Install {ppa}",
+            properties={
+                "apt_repository": {
+                    "repo": ppa
+                }
+        })
+        pb.tasks.append(task)
+
+    # packages
     packages_to_install = installed_apt_packages()
     packages_to_remove = removed_apt_packages()
-    intersection = set.intersection(set(packages_to_install), set(packages_to_remove))
-    packages_to_install = list(set(packages_to_install) - intersection)
-    packages_to_remove = list(set(packages_to_remove) - intersection)
+    package_intersection = set.intersection(set(packages_to_install), set(packages_to_remove))
+    packages_to_install = list(set(packages_to_install) - package_intersection)
+    packages_to_remove = list(set(packages_to_remove) - package_intersection)
     install_packages = Task(
         name="Install apt packages",
         properties={
@@ -117,8 +144,9 @@ def main():
     )
     pb.tasks.append(install_packages)
     pb.tasks.append(remove_packages)
+
     Path("generated_files").mkdir(parents=True, exist_ok=True)
-    with open("generated_files/playbook.yaml", "w") as file:
+    with open("generated_files/playbook.yml", "w") as file:
         pb.write(file)
 
 if __name__ == "__main__":
