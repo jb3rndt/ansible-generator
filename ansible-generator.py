@@ -1,6 +1,7 @@
 import glob
 import gzip
 import re
+import os
 from pathlib import Path
 
 
@@ -90,6 +91,14 @@ def removed_apt_packages():
     # zgrep -hPo '^Commandline: (apt-get|apt) install (?!.*--reinstall)\K.*' /var/log/apt/history.log{.*.gz,}
 
 
+def installed_snap_packages():
+    snap_packages = []
+    stream = os.popen('snap list | awk \'{print $1}\'')
+    output = list(stream.readlines())
+    output = output[1:]
+    snap_packages = list(map(lambda x: x.strip('\n'), output))
+    return snap_packages
+
 def main():
     pb = Playbook()
     packages_to_install = installed_apt_packages()
@@ -97,6 +106,7 @@ def main():
     intersection = set.intersection(set(packages_to_install), set(packages_to_remove))
     packages_to_install = list(set(packages_to_install) - intersection)
     packages_to_remove = list(set(packages_to_remove) - intersection)
+    snap_packages_to_install = installed_snap_packages()
     install_packages = Task(
         name="Install apt packages",
         properties={
@@ -115,8 +125,17 @@ def main():
             },
         },
     )
+    install_snap_packages = Task(
+        name="Install snap packages",
+        properties={
+            "community.general.snap": {
+                "name": snap_packages_to_install,
+            },
+        },
+    )
     pb.tasks.append(install_packages)
     pb.tasks.append(remove_packages)
+    pb.tasks.append(install_snap_packages)
     Path("generated_files").mkdir(parents=True, exist_ok=True)
     with open("generated_files/playbook.yaml", "w") as file:
         pb.write(file)
