@@ -1,0 +1,6 @@
+plugins = {
+    'Windows': [],
+    'Linux': [
+        #'examplePlugin'
+        ]
+}

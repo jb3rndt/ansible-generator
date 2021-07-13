@@ -5,7 +5,7 @@ from ansgen.task import Task
 from ansgen.playbook import Playbook
 
 
-def generate_windows_playbook():
+def generate_windows_playbook(plugins):
     pb = Playbook(name="Windows Playbook for all Hosts", hosts="all")
 
     ensure_path = Task(
@@ -19,6 +19,10 @@ def generate_windows_playbook():
     )
 
     pb.tasks.append(ensure_path)
+
+    for plugin in plugins:
+        if plugin.canRun():
+            plugin.run(pb)
 
     Path("generated_files/windows").mkdir(parents=True, exist_ok=True)
     with open("generated_files/windows/playbook.yaml", "w") as file:

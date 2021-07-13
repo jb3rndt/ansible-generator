@@ -9,7 +9,7 @@ from ansgen.task import Task
 from ansgen.playbook import Playbook
 
 
-def generate_unix_playbook():
+def generate_unix_playbook(plugins):
     user = get_username()
 
     pb = Playbook(become=True)
@@ -82,6 +82,10 @@ def generate_unix_playbook():
 
     pb.tasks.append(copy_user_env)
     pb.tasks.append(copy_sys_env)
+
+    for plugin in plugins:
+        if plugin.canRun():
+            plugin.run(pb)
 
     Path("generated_files/unix").mkdir(parents=True, exist_ok=True)
     with open("generated_files/unix/playbook.yaml", "w") as file:
