@@ -1,6 +1,7 @@
 plugins = {
     'Windows': [],
     'Linux': [
-        #'examplePlugin'
+        #'examplePlugin',
+        #'vsc',
         ]
 }
