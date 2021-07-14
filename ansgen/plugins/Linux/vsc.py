@@ -23,6 +23,7 @@ class Plugin(BasePlugin):
         install_extensions = Task(
             name="Install vsc extensions",
             properties={
+                "become_user" : get_username(),
                 "command": "\"{{ item }}\"",
                 "loop" : "\"{{ lookup('file', './vsc/extensions').splitlines() }}\""
             },
@@ -33,11 +34,11 @@ class Plugin(BasePlugin):
     def ensure_code_installation(self, pb):
 
         install_vsc = Task(
-            name="Install vsc via apt",
+            name="Install vsc via snap",
             properties={
-                "apt": {
-                    "state": "present",
-                    "name": ['code'],
+                "community.general.snap": {
+                    "name": "code",
+                    "classic" : "yes",
                 },
             },
         )
@@ -61,7 +62,7 @@ class Plugin(BasePlugin):
                     "mode": "0644",
                 },
                 "loop": [
-                    f'{{ src: "./generated_files/vsc/{user}/settings.json", dest: "~/.config/Code/User/settings.json" }}',
+                    f'{{ src: "./vsc/{user}/settings.json", dest: "~/.config/Code/User/settings.json" }}',
                 ]
             },
         )
