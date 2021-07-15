@@ -15,11 +15,15 @@ class Plugin(BasePlugin):
 
     def save_extensions(self, pb):
 
+        # get list of extensions from VS Code
         vsc_extensions_stream = os.popen('code --list-extensions | xargs -L 1 echo code --install-extension')
+
+        # save extensions to file
         Path("generated_files/vsc").mkdir(parents=True, exist_ok=True)
         with open("generated_files/vsc/extensions", "w") as file:
             file.writelines(vsc_extensions_stream)
 
+        # install extensions from file
         install_extensions = Task(
             name="Install vsc extensions",
             properties={
@@ -46,6 +50,7 @@ class Plugin(BasePlugin):
 
     def save_settings(self, pb):
 
+        # copy VS Code Settings file to ./generated_files
         user = get_username()
         settings_src = str(os.path.expanduser('~/.config/Code/User/settings.json'))
         settings_dst = f"./generated_files/vsc/{user}/settings.json"
